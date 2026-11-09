@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { curriculumData } from '../data/curriculumData';
 import { BookOpen, Search, CheckCircle2, ArrowRight, Trophy, Share2, Download, Loader2, KeyRound } from 'lucide-react';
+import { trackAction } from '../telemetry';
 
 export default function RoadmapPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,8 +17,10 @@ export default function RoadmapPage() {
   const [syncMessage, setSyncMessage] = useState('');
   const [exportCode, setExportCode] = useState('');
 
-  // Load completed modules from localStorage on mount
+  // Load completed modules and log roadmap visit telemetry on mount
   useEffect(() => {
+    trackAction('roadmap_visit');
+
     const saved = localStorage.getItem('market_path_completed_modules');
     if (saved) {
       try {
@@ -56,7 +59,8 @@ export default function RoadmapPage() {
         const parts = importCodeInput.trim().split('-');
         if (parts.length >= 3 && parts[0] === 'MP') {
           const decodedModsString = atob(parts[2]);
-          const parsedModules = decodedModsString ? decodedModsString.split(',').map(Number).filter(Boolean) : [];
+          // Map to numbers and filter out falsy/NaN values
+          const parsedModules = decodedModsString ? decodedModsString.split(',').map(n => Number(n.trim())).filter(Boolean) : [];
           
           setCompletedModules(parsedModules);
           localStorage.setItem('market_path_completed_modules', JSON.stringify(parsedModules));
@@ -182,13 +186,15 @@ export default function RoadmapPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredModules.map((mod) => {
             const Icon = mod.icon || BookOpen;
-            const isCompleted = completedModules.includes(mod.id);
+            const isCompleted = completedModules.some(id => String(id) === String(mod.id));
 
             return (
               <div
                 key={mod.id}
                 className={`group bg-navy-900 border rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-2 shadow-lg ${
-                  isCompleted ? 'border-emerald-500/50 bg-navy-900/90' : 'border-slate-800/90 hover:border-emerald-500/60'
+                  isCompleted 
+                    ? 'border-emerald-500/50 bg-navy-900/90' 
+                    : `border-slate-800/90 ${mod.borderHover || 'hover:border-emerald-500/60'}`
                 }`}
               >
                 <div>

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calculator, DollarSign, ShieldAlert, PieChart, Layers } from 'lucide-react';
+import { trackAction } from '../telemetry';
 
 export default function CalculatorsSuite() {
   const [activeTab, setActiveTab] = useState(1); // 1: Position Size, 2: Profit & Pip, 3: Margin & Leverage
@@ -44,10 +45,11 @@ export default function CalculatorsSuite() {
   // Tab 3 Calculations (1 Standard Lot = $100,000 notional value)
   const requiredMargin = (Number(leverage) || 0) > 0 ? ((Number(tradeSizeLots) || 0) * 100000) / Number(leverage) : 0;
 
-  // Helper to filter out letters and allow only numbers and dots
+  // Helper to filter out letters and allow only numbers and dots + trigger telemetry
   const handleNumericInput = (setter) => (e) => {
     const val = e.target.value.replace(/[^0-9.]/g, '');
     setter(val);
+    trackAction('calculator_use');
   };
 
   return (
@@ -74,7 +76,7 @@ export default function CalculatorsSuite() {
           {/* Top Switcher Tabs */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 bg-navy-950 p-2 rounded-2xl border border-slate-800/80">
             <button
-              onClick={() => setActiveTab(1)}
+              onClick={() => { setActiveTab(1); trackAction('calculator_use'); }}
               className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer ${
                 activeTab === 1 
                   ? 'bg-emerald-500 text-navy-950 shadow-lg shadow-emerald-500/20' 
@@ -85,7 +87,7 @@ export default function CalculatorsSuite() {
             </button>
 
             <button
-              onClick={() => setActiveTab(2)}
+              onClick={() => { setActiveTab(2); trackAction('calculator_use'); }}
               className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer ${
                 activeTab === 2 
                   ? 'bg-emerald-500 text-navy-950 shadow-lg shadow-emerald-500/20' 
@@ -96,7 +98,7 @@ export default function CalculatorsSuite() {
             </button>
 
             <button
-              onClick={() => setActiveTab(3)}
+              onClick={() => { setActiveTab(3); trackAction('calculator_use'); }}
               className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer ${
                 activeTab === 3 
                   ? 'bg-emerald-500 text-navy-950 shadow-lg shadow-emerald-500/20' 
@@ -144,7 +146,10 @@ export default function CalculatorsSuite() {
                     max="10"
                     step="0.1"
                     value={riskPercentage}
-                    onChange={(e) => setRiskPercentage(parseFloat(e.target.value))}
+                    onChange={(e) => {
+                      setRiskPercentage(parseFloat(e.target.value));
+                      trackAction('calculator_use');
+                    }}
                     className="w-full accent-emerald-500 bg-navy-950 cursor-pointer h-2 rounded-lg"
                   />
                 </div>
@@ -170,7 +175,10 @@ export default function CalculatorsSuite() {
                     </label>
                     <select
                       value={currencyPair}
-                      onChange={(e) => setCurrencyPair(e.target.value)}
+                      onChange={(e) => {
+                        setCurrencyPair(e.target.value);
+                        trackAction('calculator_use');
+                      }}
                       className="w-full bg-navy-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm font-medium focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
                     >
                       {Object.keys(pairPipValues).map((pair) => (
@@ -317,7 +325,10 @@ export default function CalculatorsSuite() {
                   </label>
                   <select
                     value={leverage}
-                    onChange={(e) => setLeverage(Number(e.target.value))}
+                    onChange={(e) => {
+                      setLeverage(Number(e.target.value));
+                      trackAction('calculator_use');
+                    }}
                     className="w-full bg-navy-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm font-medium focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
                   >
                     <option value={30}>1:30 (FCA / ASIC Standard Limit)</option>

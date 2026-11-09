@@ -12,22 +12,27 @@ export default function ModuleDetailPage() {
 
   const [isCompleted, setIsCompleted] = useState(false);
 
-  // Load completion status on mount
+  // Load completion status on mount with type-safe comparison
   useEffect(() => {
     const saved = localStorage.getItem('market_path_completed_modules');
     if (saved) {
       try {
         const completedIds = JSON.parse(saved);
-        if (completedIds.includes(moduleData.id)) {
+        const found = completedIds.some(id => String(id) === String(moduleData.id));
+        if (found) {
           setIsCompleted(true);
+        } else {
+          setIsCompleted(false);
         }
       } catch (e) {
         console.error('Error reading completed modules', e);
       }
+    } else {
+      setIsCompleted(false);
     }
   }, [moduleData.id]);
 
-  // Toggle completion status and store in localStorage
+  // Toggle completion status and store in localStorage with type-safe handling
   const toggleComplete = () => {
     const saved = localStorage.getItem('market_path_completed_modules');
     let completedIds = [];
@@ -40,10 +45,11 @@ export default function ModuleDetailPage() {
     }
 
     if (isCompleted) {
-      completedIds = completedIds.filter((id) => id !== moduleData.id);
+      completedIds = completedIds.filter((id) => String(id) !== String(moduleData.id));
       setIsCompleted(false);
     } else {
-      if (!completedIds.includes(moduleData.id)) {
+      const alreadyExists = completedIds.some(id => String(id) === String(moduleData.id));
+      if (!alreadyExists) {
         completedIds.push(moduleData.id);
       }
       setIsCompleted(true);

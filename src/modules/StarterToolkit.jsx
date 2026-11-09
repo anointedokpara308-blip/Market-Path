@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldAlert, Download, CheckCircle2, Send, FileText } from 'lucide-react';
 import emailjs from '@emailjs/browser';
+import { trackAction } from '../telemetry';
 
 export default function StarterToolkit() {
   const [email, setEmail] = useState('');
@@ -29,6 +30,10 @@ export default function StarterToolkit() {
     emailjs.send(serviceID, templateID, templateParams, publicKey)
       .then((response) => {
         console.log('SUCCESS!', response.status, response.text);
+        
+        // Log telemetry event for PDF toolkit acquisition
+        trackAction('toolkit_download');
+
         setLoading(false);
         setSubmitted(true);
       })

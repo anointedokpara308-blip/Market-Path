@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { HelpCircle, RefreshCw, ShieldAlert, ArrowRight } from 'lucide-react';
+import { trackAction } from '../telemetry';
 
 export default function RiskQuiz() {
   const [step, setStep] = useState(1);
@@ -45,6 +46,9 @@ export default function RiskQuiz() {
   };
 
   const calculateResult = (finalAnswers) => {
+    // Log telemetry event for diagnostic quiz completion
+    trackAction('quiz_complete');
+
     const totalScore = (finalAnswers.q1 || 1) + (finalAnswers.q2 || 1) + (finalAnswers.q3 || 1);
     
     if (totalScore <= 4) {

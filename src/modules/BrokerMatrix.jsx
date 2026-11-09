@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Star, ExternalLink, Award, HelpCircle, X, CheckCircle2, UserCheck, Shield, Wallet } from 'lucide-react';
+import { trackAction } from '../telemetry';
 
 export default function BrokerMatrix() {
   const [filter, setFilter] = useState('All');
@@ -207,12 +208,13 @@ export default function BrokerMatrix() {
                     </span>
                   </td>
 
-                  {/* Action Button (Affiliate link slot) */}
+                  {/* Action Button (Affiliate link slot with telemetry) */}
                   <td className="py-5 px-6 text-right">
                     <a
                       href={broker.affiliateLink}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => trackAction('broker_click', { brokerName: broker.name })}
                       className={`inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
                         broker.isFeatured
                           ? 'bg-emerald-500 hover:bg-emerald-400 text-navy-950 shadow-emerald-500/25 ring-2 ring-emerald-400/40'

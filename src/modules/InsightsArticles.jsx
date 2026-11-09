@@ -2,10 +2,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { articlesData } from '../data/articlesData';
 import { BookOpen, Clock, ArrowRight, Calendar, Globe } from 'lucide-react';
+import { trackAction } from '../telemetry';
 
 export default function InsightsArticles({ onSelectArticle }) {
   // Only display the first 3 articles on the homepage
   const homeArticles = articlesData.slice(0, 3);
+
+  const handleArticleClick = (art) => {
+    trackAction('article_read', { articleTitle: art.title });
+    if (onSelectArticle) {
+      onSelectArticle(art);
+    }
+  };
 
   return (
     <section id="articles" className="bg-navy-950 text-slate-100 font-sans py-16 px-4 sm:px-6 lg:px-8">
@@ -30,7 +38,7 @@ export default function InsightsArticles({ onSelectArticle }) {
           {homeArticles.map((art) => (
             <div
               key={art.id}
-              onClick={() => onSelectArticle && onSelectArticle(art)}
+              onClick={() => handleArticleClick(art)}
               className={`group bg-navy-900 border border-slate-800/90 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-2 shadow-lg cursor-pointer ${art.hoverBorder}`}
             >
               <div>
