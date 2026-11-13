@@ -139,18 +139,25 @@ export default function AdminDashboardPage() {
         if (e.event_type === 'article_read' || e.event_type === 'curriculum_progress') {
           const lesson = e.meta?.articleTitle || e.meta?.lessonId || 'Module Activity';
           u.articleReads[lesson] = (u.articleReads[lesson] || 0) + 1;
-          if (e.meta?.completedModuleId && !u.completedModules.includes(e.meta.completedModuleId)) {
-            u.completedModules.push(e.meta.completedModuleId);
+          
+          // Type-safe handling for completed modules
+          const rawModId = e.meta?.completedModuleId || e.meta?.lessonId;
+          if (rawModId !== undefined && rawModId !== null) {
+            const modIdStr = String(rawModId);
+            if (!u.completedModules.some(id => String(id) === modIdStr)) {
+              u.completedModules.push(rawModId);
+            }
           }
         }
       });
 
       const uniqueUsersList = Object.values(userMap);
 
-      // Global curriculum aggregation map
+      // Global curriculum aggregation map (type-safe comparison)
       let moduleCompletionMap = {};
       curriculumData.forEach(mod => {
-        moduleCompletionMap[mod.id] = { title: mod.title, completed: uniqueUsersList.some(u => u.completedModules.includes(mod.id)) };
+        const isModDone = uniqueUsersList.some(u => u.completedModules.some(id => String(id) === String(mod.id)));
+        moduleCompletionMap[mod.id] = { title: mod.title, completed: isModDone };
       });
 
       setAnalyticsData({
@@ -510,7 +517,8 @@ export default function AdminDashboardPage() {
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3">Curriculum Module Progress Breakdown</h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {curriculumData.map((mod) => {
-                    const isDone = selectedUser.completedModules.includes(mod.id);
+                    // Type-safe string comparison for module completion matching
+                    const isDone = selectedUser.completedModules.some(id => String(id) === String(mod.id));
                     return (
                       <div key={mod.id} className="bg-navy-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
                         <span className="font-medium text-slate-300">Module {mod.id}: {mod.title}</span>

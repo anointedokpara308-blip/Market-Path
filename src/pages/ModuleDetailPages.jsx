@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { curriculumData } from '../data/curriculumData';
-import { ArrowLeft, CheckCircle2, Award, ExternalLink, BookOpen, Clock, Check } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Award, ExternalLink, BookOpen, Clock } from 'lucide-react';
+import { trackAction } from '../telemetry';
 
 export default function ModuleDetailPage() {
   const { slug } = useParams();
@@ -32,8 +33,8 @@ export default function ModuleDetailPage() {
     }
   }, [moduleData.id]);
 
-  // Toggle completion status and store in localStorage with type-safe handling
-  const toggleComplete = () => {
+  // Toggle completion status, store in localStorage, and dispatch Supabase telemetry event
+  const toggleComplete = async () => {
     const saved = localStorage.getItem('market_path_completed_modules');
     let completedIds = [];
     if (saved) {
@@ -44,18 +45,32 @@ export default function ModuleDetailPage() {
       }
     }
 
+    let newStatus = false;
     if (isCompleted) {
       completedIds = completedIds.filter((id) => String(id) !== String(moduleData.id));
       setIsCompleted(false);
+      newStatus = false;
     } else {
       const alreadyExists = completedIds.some(id => String(id) === String(moduleData.id));
       if (!alreadyExists) {
         completedIds.push(moduleData.id);
       }
       setIsCompleted(true);
+      newStatus = true;
     }
 
     localStorage.setItem('market_path_completed_modules', JSON.stringify(completedIds));
+
+    // Dispatch telemetry event to Supabase cloud table so admin dashboard tracks per-user curriculum progress
+    try {
+      await trackAction('curriculum_progress', {
+        completedModuleId: moduleData.id,
+        lessonTitle: moduleData.title,
+        status: newStatus ? 'completed' : 'unmarked'
+      });
+    } catch (err) {
+      console.warn('Failed to sync module progress to Supabase:', err);
+    }
   };
 
   return (
@@ -80,7 +95,7 @@ export default function ModuleDetailPage() {
               </span>
               <div className="flex items-center space-x-1 text-xs text-slate-400 font-medium">
                 <Clock className="w-3.5 h-3.5" />
-                <span>{moduleData.duration} • {moduleData.lessons}</span>
+                <span>{moduleData.duration}</span>
               </div>
             </div>
 
