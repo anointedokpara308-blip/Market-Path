@@ -79,10 +79,11 @@ export default function AdminDashboardPage() {
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-      const visitsToday = allEvents.filter(e => (e.event_type === 'roadmap_visit' || e.event_type === 'visit') && new Date(e.created_at) >= oneDayAgo).length;
-      const visitsWeek = allEvents.filter(e => (e.event_type === 'roadmap_visit' || e.event_type === 'visit') && new Date(e.created_at) >= oneWeekAgo).length;
-      const visitsMonth = allEvents.filter(e => (e.event_type === 'roadmap_visit' || e.event_type === 'visit') && new Date(e.created_at) >= oneMonthAgo).length;
-      const totalVisits = allEvents.filter(e => e.event_type === 'roadmap_visit' || e.event_type === 'visit').length;
+      // Fixed: Total visits now count general site visits ('visit') plus roadmap views, separating total traffic from curriculum views
+      const visitsToday = allEvents.filter(e => (e.event_type === 'visit' || e.event_type === 'roadmap_visit') && new Date(e.created_at) >= oneDayAgo).length;
+      const visitsWeek = allEvents.filter(e => (e.event_type === 'visit' || e.event_type === 'roadmap_visit') && new Date(e.created_at) >= oneWeekAgo).length;
+      const visitsMonth = allEvents.filter(e => (e.event_type === 'visit' || e.event_type === 'roadmap_visit') && new Date(e.created_at) >= oneMonthAgo).length;
+      const totalVisits = allEvents.filter(e => e.event_type === 'visit' || e.event_type === 'roadmap_visit').length;
 
       const roadmapVisits = allEvents.filter(e => e.event_type === 'roadmap_visit').length;
       const toolkitDownloads = allEvents.filter(e => e.event_type === 'toolkit_download').length;
@@ -102,6 +103,8 @@ export default function AdminDashboardPage() {
       });
 
       // Group events dynamically by IP Address / Client ID
+      // Note: Events are ordered descending (newest first), so we track decided module states
+      // to ensure older events don't override newer toggles.
       const userMap = {};
       allEvents.forEach(e => {
         const ip = e.ip_address && e.ip_address !== 'global-node-client' ? e.ip_address : (e.meta?.clientId || 'Unknown Visitor');
@@ -112,6 +115,7 @@ export default function AdminDashboardPage() {
             device: e.meta?.userAgent ? (e.meta.userAgent.includes('Mobile') ? 'Mobile Device' : 'Desktop Browser') : 'Standard Web Node',
             lastActive: new Date(e.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             completedModules: [],
+            _decidedModules: new Set(),
             quizCompleted: false,
             calculatorUsed: 0,
             toolkitDownloaded: false,
@@ -122,6 +126,7 @@ export default function AdminDashboardPage() {
         }
 
         const u = userMap[ip];
+
         if (e.event_type === 'toolkit_download') {
           u.toolkitDownloaded = true;
           u.toolkitDetails = 'Starter Toolkit PDF Acquired';
@@ -136,22 +141,29 @@ export default function AdminDashboardPage() {
           const bName = e.meta?.brokerName || 'Broker';
           u.brokerClicks[bName] = (u.brokerClicks[bName] || 0) + 1;
         }
-        if (e.event_type === 'article_read' || e.event_type === 'curriculum_progress') {
-          const lesson = e.meta?.articleTitle || e.meta?.lessonId || 'Module Activity';
-          u.articleReads[lesson] = (u.articleReads[lesson] || 0) + 1;
-          
-          // Type-safe handling for completed modules
-          const rawModId = e.meta?.completedModuleId || e.meta?.lessonId;
-          if (rawModId !== undefined && rawModId !== null) {
-            const modIdStr = String(rawModId);
-            if (!u.completedModules.some(id => String(id) === modIdStr)) {
-              u.completedModules.push(rawModId);
+        if (e.event_type === 'article_read') {
+          const title = e.meta?.articleTitle || 'Guide';
+          u.articleReads[title] = (u.articleReads[title] || 0) + 1;
+        }
+
+        // Dedicated Curriculum Progress Parser (Isolated from article reads and fixed to prevent override bugs)
+        if (e.event_type === 'curriculum_progress') {
+          const modId = e.meta?.completedModuleId;
+          const status = e.meta?.status; // 'completed' or 'unmarked'
+
+          if (modId !== undefined && modId !== null) {
+            const modIdStr = String(modId);
+            if (!u._decidedModules.has(modIdStr)) {
+              u._decidedModules.add(modIdStr);
+              if (status === 'completed' || !status) {
+                u.completedModules.push(modIdStr);
+              }
             }
           }
         }
       });
 
-      const uniqueUsersList = Object.values(userMap);
+      const uniqueUsersList = Object.values(userMap).map(({ _decidedModules, ...cleanUser }) => cleanUser);
 
       // Global curriculum aggregation map (type-safe comparison)
       let moduleCompletionMap = {};
