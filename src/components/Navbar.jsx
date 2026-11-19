@@ -6,6 +6,7 @@ export default function Navbar({ onOpenSearch }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const headerRef = useRef(null);
   const tickerContainerRef = useRef(null);
 
   // Dynamically embed TradingView Live Ticker Tape Widget
@@ -42,29 +43,57 @@ export default function Navbar({ onOpenSearch }) {
     }
   }, []);
 
+  const scrollToTarget = (sectionId) => {
+    const htmlEl = document.documentElement;
+    const prevBehavior = htmlEl.style.scrollBehavior;
+    htmlEl.style.scrollBehavior = 'auto';
+
+    if (sectionId === 'home') {
+      window.scrollTo(0, 0);
+      setTimeout(() => {
+        htmlEl.style.scrollBehavior = 'auto';
+        window.scrollTo(0, 0);
+        htmlEl.style.scrollBehavior = prevBehavior;
+      }, 150);
+      return;
+    }
+
+    const element = document.getElementById(sectionId);
+    if (!element) {
+      htmlEl.style.scrollBehavior = prevBehavior;
+      return;
+    }
+
+    const headerHeight = headerRef.current ? headerRef.current.getBoundingClientRect().height : 120;
+    const elementTop = element.getBoundingClientRect().top + window.scrollY;
+    const targetScrollTop = Math.max(0, elementTop - headerHeight - 12);
+
+    window.scrollTo(0, targetScrollTop);
+    htmlEl.style.scrollBehavior = prevBehavior;
+  };
+
   const handleNavClick = (sectionId) => {
-    setMobileMenuOpen(false); // Close mobile menu if open
+    const wasMenuOpen = mobileMenuOpen;
+    setMobileMenuOpen(false);
+
+    const runScroll = () => {
+      if (wasMenuOpen) {
+        requestAnimationFrame(() => requestAnimationFrame(() => scrollToTarget(sectionId)));
+      } else {
+        scrollToTarget(sectionId);
+      }
+    };
 
     if (location.pathname === '/') {
-      // If already on home page, scroll smoothly
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
+      runScroll();
     } else {
-      // If on another page, navigate to home first, then scroll
       navigate('/');
-      setTimeout(() => {
-        const element = document.getElementById(sectionId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
+      setTimeout(runScroll, 140);
     }
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-navy-900/95 backdrop-blur-md border-b border-gray-800">
+    <header ref={headerRef} className="sticky top-0 z-40 bg-navy-900/95 backdrop-blur-md border-b border-gray-800">
       
       {/* Real Live Market Feed Bar (No Forced Auto-Scroll, Fully Live Up/Down Prices) */}
       <div className="bg-navy-950 border-b border-gray-800/80 px-2 py-1 overflow-x-auto">

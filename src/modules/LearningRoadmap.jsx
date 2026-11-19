@@ -130,7 +130,7 @@ export default function LearningRoadmap() {
   ).length;
 
   return (
-    <section id='roadmap' className="bg-navy-950 text-slate-100 font-sans py-16 px-4 sm:px-6 lg:px-8">
+    <section id='roadmap' className="scroll-mt-32 bg-navy-950 text-slate-100 font-sans py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
 
         {/* Section Header */}

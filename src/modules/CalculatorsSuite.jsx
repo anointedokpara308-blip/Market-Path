@@ -53,7 +53,7 @@ export default function CalculatorsSuite() {
   };
 
   return (
-    <section id='calculators' className="bg-navy-950 text-slate-100 font-sans py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-800/80">
+    <section id='calculators' className="scroll-mt-32 bg-navy-950 text-slate-100 font-sans py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-800/80">
       <div className="max-w-5xl mx-auto">
         
         {/* Header */}

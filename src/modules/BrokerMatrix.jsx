@@ -80,7 +80,7 @@ export default function BrokerMatrix() {
   });
 
   return (
-    <section id="brokers" className="bg-navy-950 text-slate-100 font-sans py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-800/85">
+    <section id="brokers" className="scroll-mt-32 bg-navy-950 text-slate-100 font-sans py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-800/85">
       <div className="max-w-7xl mx-auto">
         
         {/* Section Header & Filters */}

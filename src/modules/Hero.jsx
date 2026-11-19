@@ -135,7 +135,7 @@ export default function Hero() {
   ];
 
   return (
-    <section id='home' className="bg-navy-950 text-slate-100 font-sans pt-12 pb-16 px-4 sm:px-6 lg:px-8">
+    <section id='home' className="scroll-mt-32 bg-navy-950 text-slate-100 font-sans pt-12 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto w-full">
         
         {/* Main Grid: 2 columns on desktop (lg), 1 column (centered) on tablet and mobile */}

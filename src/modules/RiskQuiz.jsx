@@ -77,7 +77,7 @@ export default function RiskQuiz() {
   };
 
   return (
-    <section id="quiz" className="bg-navy-950 text-slate-100 font-sans py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-800/85">
+    <section id="quiz" className="scroll-mt-32 bg-navy-950 text-slate-100 font-sans py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-800/85">
       <div className="max-w-6xl mx-auto">
         
         {/* Header */}
