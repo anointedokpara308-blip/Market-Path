@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Globe, CandlestickChart, Brain, ShieldAlert,
@@ -6,6 +6,26 @@ import {
 } from 'lucide-react';
 
 export default function LearningRoadmap() {
+  const [completedModules, setCompletedModules] = useState([]);
+
+  useEffect(() => {
+    const loadCompleted = () => {
+      const saved = localStorage.getItem('market_path_completed_modules');
+      if (saved) {
+        try {
+          setCompletedModules(JSON.parse(saved));
+        } catch (e) {
+          setCompletedModules([]);
+        }
+      }
+    };
+
+    loadCompleted();
+
+    window.addEventListener('storage', loadCompleted);
+    return () => window.removeEventListener('storage', loadCompleted);
+  }, []);
+
   const modules = [
     {
       id: '01',
@@ -105,6 +125,10 @@ export default function LearningRoadmap() {
     }
   ];
 
+  const completedCount = modules.filter(mod => 
+    completedModules.some(id => Number(id) === Number(mod.id))
+  ).length;
+
   return (
     <section id='roadmap' className="bg-navy-950 text-slate-100 font-sans py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -125,7 +149,7 @@ export default function LearningRoadmap() {
           </div>
 
           <div className="text-xs font-mono font-semibold text-slate-400 bg-navy-900 border border-slate-800 px-4 py-2.5 rounded-xl w-fit">
-            Progress: <span className="text-emerald-400 font-bold">0 of 6 Modules Done</span>
+            Progress: <span className="text-emerald-400 font-bold">{completedCount} of 9 Modules Done</span>
           </div>
         </div>
 
@@ -133,6 +157,7 @@ export default function LearningRoadmap() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {modules.map((mod) => {
             const Icon = mod.icon;
+            const isDone = completedModules.some(id => Number(id) === Number(mod.id));
 
             return (
               <div
@@ -145,9 +170,16 @@ export default function LearningRoadmap() {
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${mod.iconBg}`}>
                       <Icon className="w-6 h-6" />
                     </div>
-                    <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md border ${mod.badgeBg}`}>
-                      MODULE {mod.id}
-                    </span>
+                    {isDone ? (
+                      <span className="inline-flex items-center space-x-1 text-xs font-mono font-bold px-2.5 py-1 rounded-md border bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>COMPLETED</span>
+                      </span>
+                    ) : (
+                      <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md border ${mod.badgeBg}`}>
+                        MODULE {mod.id}
+                      </span>
+                    )}
                   </div>
 
                   {/* Title & Description */}
@@ -178,7 +210,7 @@ export default function LearningRoadmap() {
                     to={`/roadmap/${mod.slug}`}
                     className={`bg-navy-950 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-800 transition-all duration-300 flex items-center space-x-1.5 cursor-pointer ${mod.btnHover}`}
                   >
-                    <span>Start Module</span>
+                    <span>{isDone ? 'Review Module' : 'Start Module'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>

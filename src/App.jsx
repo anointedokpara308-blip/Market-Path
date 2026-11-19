@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { trackAction } from './telemetry';
 
 import Navbar from './components/Navbar';
 import TickerBar from './components/TickerBar';
@@ -43,6 +44,14 @@ function ScrollToTop() {
 export default function App() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState(null);
+  const hasTrackedVisit = useRef(false);
+
+  useEffect(() => {
+    if (!hasTrackedVisit.current) {
+      hasTrackedVisit.current = true;
+      trackAction('visit');
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0a0f1d] text-white flex flex-col font-sans selection:bg-emerald-500 selection:text-navy-900">

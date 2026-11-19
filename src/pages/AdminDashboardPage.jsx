@@ -14,9 +14,10 @@ export default function AdminDashboardPage() {
   // Visit Timeframe Filter State ('all', 'month', 'week', 'today')
   const [visitTimeframe, setVisitTimeframe] = useState('all');
 
-  // Modals state
+  // Modals & Overview Breakdown User state
   const [showUserListModal, setShowUserListModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [breakdownUser, setBreakdownUser] = useState(null);
 
   // Telemetry Metrics State
   const [analyticsData, setAnalyticsData] = useState({
@@ -79,11 +80,11 @@ export default function AdminDashboardPage() {
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-      // Fixed: Total visits now count general site visits ('visit') plus roadmap views, separating total traffic from curriculum views
-      const visitsToday = allEvents.filter(e => (e.event_type === 'visit' || e.event_type === 'roadmap_visit') && new Date(e.created_at) >= oneDayAgo).length;
-      const visitsWeek = allEvents.filter(e => (e.event_type === 'visit' || e.event_type === 'roadmap_visit') && new Date(e.created_at) >= oneWeekAgo).length;
-      const visitsMonth = allEvents.filter(e => (e.event_type === 'visit' || e.event_type === 'roadmap_visit') && new Date(e.created_at) >= oneMonthAgo).length;
-      const totalVisits = allEvents.filter(e => e.event_type === 'visit' || e.event_type === 'roadmap_visit').length;
+      // Total site visits strictly track general 'visit' events; roadmapVisits tracks 'roadmap_visit' separately
+      const visitsToday = allEvents.filter(e => e.event_type === 'visit' && new Date(e.created_at) >= oneDayAgo).length;
+      const visitsWeek = allEvents.filter(e => e.event_type === 'visit' && new Date(e.created_at) >= oneWeekAgo).length;
+      const visitsMonth = allEvents.filter(e => e.event_type === 'visit' && new Date(e.created_at) >= oneMonthAgo).length;
+      const totalVisits = allEvents.filter(e => e.event_type === 'visit').length;
 
       const roadmapVisits = allEvents.filter(e => e.event_type === 'roadmap_visit').length;
       const toolkitDownloads = allEvents.filter(e => e.event_type === 'toolkit_download').length;
@@ -165,10 +166,10 @@ export default function AdminDashboardPage() {
 
       const uniqueUsersList = Object.values(userMap).map(({ _decidedModules, ...cleanUser }) => cleanUser);
 
-      // Global curriculum aggregation map (type-safe comparison)
+      // Global curriculum aggregation map (numeric ID normalization)
       let moduleCompletionMap = {};
       curriculumData.forEach(mod => {
-        const isModDone = uniqueUsersList.some(u => u.completedModules.some(id => String(id) === String(mod.id)));
+        const isModDone = uniqueUsersList.some(u => u.completedModules.some(id => Number(id) === Number(mod.id)));
         moduleCompletionMap[mod.id] = { title: mod.title, completed: isModDone };
       });
 
@@ -254,6 +255,19 @@ export default function AdminDashboardPage() {
     if (visitTimeframe === 'month') return analyticsData.visitsMonth;
     return analyticsData.totalVisits;
   };
+
+  // Build overview items either for a selected user or globally across all users
+  const overviewModules = curriculumData.map((mod) => {
+    const isCompleted = breakdownUser
+      ? breakdownUser.completedModules.some((id) => Number(id) === Number(mod.id))
+      : Boolean(analyticsData.curriculumModuleStats[mod.id]?.completed);
+
+    return {
+      id: mod.id,
+      title: mod.title,
+      completed: isCompleted
+    };
+  });
 
   return (
     <div className="bg-navy-950 text-slate-100 font-sans min-h-screen pt-28 pb-16 px-4 sm:px-6 lg:px-8">
@@ -378,35 +392,51 @@ export default function AdminDashboardPage() {
 
         {/* Curriculum Module Progress Breakdown */}
         <div className="bg-navy-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl mb-10">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <div>
               <h2 className="text-lg font-bold text-white flex items-center space-x-2">
                 <BookOpen className="w-5 h-5 text-emerald-400"/>
-                <span>Global Curriculum Completion Overview</span>
+                <span>
+                  {breakdownUser
+                    ? `Curriculum Completion — ${breakdownUser.ipAddress}`
+                    : 'Global Curriculum Completion Overview'}
+                </span>
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                Aggregated progression across all modules.
+                {breakdownUser
+                  ? `Showing completed modules for ${breakdownUser.ipAddress} (${breakdownUser.completedModules.length} of ${curriculumData.length} completed).`
+                  : 'Aggregated progression across all modules.'}
               </p>
             </div>
-            <button
-              onClick={() => setShowUserListModal(true)}
-              className="text-xs font-bold text-cyan-400 hover:underline cursor-pointer flex items-center space-x-1"
-            >
-              <span>View Per-User Breakdown →</span>
-            </button>
+            <div className="flex items-center space-x-4">
+              {breakdownUser && (
+                <button
+                  onClick={() => setBreakdownUser(null)}
+                  className="text-xs font-bold text-slate-300 hover:text-white cursor-pointer"
+                >
+                  Reset to Global
+                </button>
+              )}
+              <button
+                onClick={() => setShowUserListModal(true)}
+                className="text-xs font-bold text-cyan-400 hover:underline cursor-pointer flex items-center space-x-1"
+              >
+                <span>View Per-User Breakdown →</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(analyticsData.curriculumModuleStats).map(([modId, stats]) => (
-              <div key={modId} className={`p-4 rounded-xl border flex items-center justify-between ${
-                stats.completed ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-navy-950 border-slate-800'
+            {overviewModules.map((mod) => (
+              <div key={mod.id} className={`p-4 rounded-xl border flex items-center justify-between ${
+                mod.completed ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-navy-950 border-slate-800'
               }`}>
                 <div className="truncate pr-2">
-                  <div className="text-[10px] font-mono text-slate-400">MODULE {modId}</div>
-                  <div className="text-xs font-bold text-white truncate">{stats.title}</div>
+                  <div className="text-[10px] font-mono text-slate-400">MODULE {mod.id}</div>
+                  <div className="text-xs font-bold text-white truncate">{mod.title}</div>
                 </div>
                 <div>
-                  {stats.completed ? (
+                  {mod.completed ? (
                     <span className="inline-flex items-center space-x-1 text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-md border border-emerald-500/30">
                       <CheckCircle2 className="w-3 h-3"/>
                       <span>Completed</span>
@@ -439,14 +469,17 @@ export default function AdminDashboardPage() {
               </div>
 
               <p className="text-xs text-slate-300 mb-6">
-                Click on any user below to inspect their individual curriculum module progress, PDF toolkit status, and tool engagement metrics.
+                Click on any user below to update the overview breakdown and inspect their individual curriculum module progress, PDF toolkit status, and tool engagement metrics.
               </p>
 
               <div className="space-y-3">
                 {analyticsData.simulatedUsers.map((user, idx) => (
                   <div 
                     key={idx}
-                    onClick={() => { setSelectedUser(user); }}
+                    onClick={() => {
+                      setBreakdownUser(user);
+                      setSelectedUser(user);
+                    }}
                     className="bg-navy-950 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all"
                   >
                     <div>
@@ -529,8 +562,8 @@ export default function AdminDashboardPage() {
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3">Curriculum Module Progress Breakdown</h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {curriculumData.map((mod) => {
-                    // Type-safe string comparison for module completion matching
-                    const isDone = selectedUser.completedModules.some(id => String(id) === String(mod.id));
+                    // Numeric ID comparison for module completion matching
+                    const isDone = selectedUser.completedModules.some(id => Number(id) === Number(mod.id));
                     return (
                       <div key={mod.id} className="bg-navy-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
                         <span className="font-medium text-slate-300">Module {mod.id}: {mod.title}</span>

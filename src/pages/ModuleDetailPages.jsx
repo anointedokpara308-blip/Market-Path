@@ -13,13 +13,13 @@ export default function ModuleDetailPage() {
 
   const [isCompleted, setIsCompleted] = useState(false);
 
-  // Load completion status on mount with type-safe comparison
+  // Load completion status on mount with numeric normalization for cross-device sync
   useEffect(() => {
     const saved = localStorage.getItem('market_path_completed_modules');
     if (saved) {
       try {
         const completedIds = JSON.parse(saved);
-        const found = completedIds.some(id => String(id) === String(moduleData.id));
+        const found = completedIds.some(id => Number(id) === Number(moduleData.id));
         if (found) {
           setIsCompleted(true);
         } else {
@@ -47,11 +47,11 @@ export default function ModuleDetailPage() {
 
     let newStatus = false;
     if (isCompleted) {
-      completedIds = completedIds.filter((id) => String(id) !== String(moduleData.id));
+      completedIds = completedIds.filter((id) => Number(id) !== Number(moduleData.id));
       setIsCompleted(false);
       newStatus = false;
     } else {
-      const alreadyExists = completedIds.some(id => String(id) === String(moduleData.id));
+      const alreadyExists = completedIds.some(id => Number(id) === Number(moduleData.id));
       if (!alreadyExists) {
         completedIds.push(moduleData.id);
       }
