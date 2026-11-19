@@ -47,8 +47,9 @@ export default function App() {
   const hasTrackedVisit = useRef(false);
 
   useEffect(() => {
-    if (!hasTrackedVisit.current) {
+    if (!hasTrackedVisit.current && !sessionStorage.getItem('mp_session_visited')) {
       hasTrackedVisit.current = true;
+      sessionStorage.setItem('mp_session_visited', 'true');
       trackAction('visit');
     }
   }, []);

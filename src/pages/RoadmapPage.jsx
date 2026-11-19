@@ -64,6 +64,7 @@ export default function RoadmapPage() {
           
           setCompletedModules(parsedModules);
           localStorage.setItem('market_path_completed_modules', JSON.stringify(parsedModules));
+          window.dispatchEvent(new Event('storage'));
           generateSyncCode(parsedModules);
           
           setIsSyncing(false);
@@ -96,7 +97,9 @@ export default function RoadmapPage() {
   });
 
   const totalModules = curriculumData.length;
-  const completedCount = completedModules.length;
+  const completedCount = curriculumData.filter((mod) =>
+    completedModules.some((id) => Number(id) === Number(mod.id))
+  ).length;
   const progressPercentage = Math.round((completedCount / totalModules) * 100);
 
   return (
@@ -186,7 +189,7 @@ export default function RoadmapPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredModules.map((mod) => {
             const Icon = mod.icon || BookOpen;
-            const isCompleted = completedModules.some(id => String(id) === String(mod.id));
+            const isCompleted = completedModules.some(id => Number(id) === Number(mod.id));
 
             return (
               <div
